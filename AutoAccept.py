@@ -10,106 +10,106 @@ import win32con
 import Tkinter as tk
 import threading
 import Queue
-
+dots = ""
 inQueue = True
 
 
-top = tk.Tk()
+class GUI(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self.gameType = tk.IntVar()
+        self.radio1 = tk.Radiobutton(self, text = "Normal" ,variable = self.gameType, value = 1, indicatoron=0, width = 18, bd=1)
+        self.radio1.grid(row=0, column = 0)
+        self.radio2 = tk.Radiobutton(self, text = "Ranked" ,variable = self.gameType, value = 2, indicatoron=0, width = 18, bd=1)
+        self.radio2.grid(row=0, column = 1)
 
-def screenGrab():
-    pyscreeze.screenshot(os.getcwd() + '\\Templates' + '\\LeagueGrab.jpg')
+        self.label1 = tk.Label(self, text="1st Ban Pref.")
+        self.label1.grid(row=1, column = 0)
+        self.label2 = tk.Label(self, text="2st Ban Pref.")
+        self.label2.grid(row=2, column = 0)
 
+        self.rawban1 = tk.StringVar()
+        self.entry1 = tk.Entry(self, bd =1, textvariable = self.rawban1, width = 22)
+        self.entry1.grid(row=1, column=1)
+        self.rawban2 = tk.StringVar()
+        self.entry2 = tk.Entry(self, bd =1, textvariable = self.rawban2, width = 22)
+        self.entry2.grid(row=2, column=1)
 
+        self.button = tk.Button(self, text = "Start", command = main, width = 37, bd=1)
+        self.button.grid(row=3, columnspan=2)
 
-def othersAccept():
-    global top
-    top.after(1000)
-    champSelect = False
-    for x in range(1,11):
-        screenGrab()
-        template('MatchAccepted')
-        if templateMatch == False:
-            top.after(2000)
-            template('QueueIcon')
-            if templateMatch == False:
-                template('AcceptButton')
-                if templateMatch == True:
-                    champSelect = False
-                else:
-                    champSelect = True
-                break
-            else:
-                champSelect = False
-                break
-        top.after(3000)
-    if champSelect == True:
-        if NorR == 2:
-            banWait()
-    else:
-        checkingLoop()  
-    
+        self.msg = tk.StringVar()
+        self.label3 = tk.Label(self, textvariable = self.msg, width = 37)
+        self.label3.grid(row = 4, columnspan=2)
 
 
-        
-def askBans():
-    #global NorR
-    #NorR = raw_input('N or R: ')
-    #if NorR == 'r':
-        #ban1 = raw_input('Enter first ban preference: ')
-        #ban2 = raw_input('Enter second ban preference: ')
-        #global banList
-        #banList = [ban1, ban2, 'Aatrox', 'Morde', 'Sona']
-    ban1 = rawban1.get()
-    ban2 = rawban2.get()
+def main():
+    win32gui.EnumWindows(callback, None)
+
+
+def callback(hwnd, extra):
+    global windowW
+    global windowH
+    global windowX
+    global windowY
+    global scale
+    name = win32gui.GetWindowText(hwnd)
+    visible = win32gui.IsWindowVisible(hwnd)
+    if name == 'League Client' and visible == 1:
+        placement = win32gui.GetWindowPlacement(hwnd)
+        (left, top, right, bottom) = placement[4]
+        win32gui.ShowWindow(hwnd,4)
+        win32gui.SetForegroundWindow(hwnd)
+        windowW = right - left
+        windowH = bottom - top
+        windowX = int((left + right) / 2)
+        windowY = int((top + bottom) / 2)
+        scale = windowW/1280
+        print(windowW)
+        print(windowH)
+        if left < 0:
+            win32gui.ShowWindow(hwnd,4)
+            win32gui.SetForegroundWindow(hwnd)
+            win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, windowW, windowH, 0)
+        getBans()
+        checkingLoop()
+
+
+def getBans():
+    ban1 = app.rawban1.get()
+    ban2 = app.rawban2.get()
     global banList
     banList = [ban1, ban2, 'Aatrox', 'Morde', 'Sona']
     global NorR
-    NorR = gameType.get()
-    
+    NorR = app.gameType.get()
+    print(NorR)
 
-def banWait():
-    global top
-    banning = False
-    for x in range(1,46):
-        screenGrab()
-        template('BanTime')
-        if templateMatch == True:
-            banning = True
-            break
+
+def checkingLoop():
+    dots = ""
+    global inQueue
+    inQueue = True
+    while True:
+        if inQueue == True:
+            DotMsg = '\rChecking Queue{dotNo}'.format(dotNo = dots)
+            os.system('cls' if os.name == 'nt' else 'clear')
+            app.msg.set(DotMsg)
+            app.update_idletasks()
+            screenGrab()
+            template('AcceptButton')
+            if templateMatch == True:   
+                from pymouse import PyMouse
+                m = PyMouse()
+                m.click(templatex, templatey)
+                inQueue = False
+                othersAccept()
+            time.sleep(4)
         else:
-            top.after(4000)
-    if banning == True:
-        ban()
-        
-
-
-def ban():
-    global top
-    for x in range(0,5): 
-        from pykeyboard import PyKeyboard
-        k = PyKeyboard()
-        k.tap_key(k.tab_key,n=2,interval=0.2)
-        top.after(500)
-        k.type_string(banList[x])
-        squarex = int(centrex - (windowW/4.8659))
-        squarey = int(centrey + (windowH/3.3188))
-        top.after(1000)
-        from pymouse import PyMouse
-        m = PyMouse()
-        m.move(squarex, squarey)
-        top.after(1000)
-        screenGrab()
-        template('BanTest')
-        m.click(squarex, squarey)
-        if templateMatch == False:
-            template('BanButton')
-            from pymouse import PyMouse
-            m = PyMouse()
-            m.click(templatex, templatey)
             break
 
 
-        
+
+
 def template(file):
     global templateMatch
     global templatex
@@ -134,97 +134,76 @@ def template(file):
         templatey = int((pt[1] + pt[1] + h) / 2)
 
 
+def screenGrab():
+    pyscreeze.screenshot(os.getcwd() + '\\Templates' + '\\LeagueGrab.jpg')
 
-def callback(hwnd, extra):
-    name = win32gui.GetWindowText(hwnd)
-    visible = win32gui.IsWindowVisible(hwnd)
-    if name == 'League Client' and visible == 1:
-        placement = win32gui.GetWindowPlacement(hwnd)
-        (left, top, right, bottom) = placement[4]
-        win32gui.ShowWindow(hwnd,4)
-        win32gui.SetForegroundWindow(hwnd)
-        global windowW
-        windowW = right - left
-        global windowH
-        windowH = bottom - top
-        global centrex
-        centrex = int((left + right) / 2)
-        global centrey
-        centrey = int((top + bottom) / 2)
-        global scale
-        scale = windowW/1280
-        if left < 0:
-            win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, windowW, windowH, 0)
-        askBans()
+
+def othersAccept():
+    time.sleep(1)
+    champSelect = False
+    for x in range(1,11):
+        screenGrab()
+        template('MatchAccepted')
+        if templateMatch == False:
+            time.sleep(2)
+            template('QueueIcon')
+            if templateMatch == False:
+                template('AcceptButton')
+                if templateMatch == True:
+                    champSelect = False
+                else:
+                    champSelect = True
+                break
+            else:
+                champSelect = False
+                break
+        time.sleep(3)
+    if champSelect == True:
+        if NorR == 2:
+            banWait()
+    else:
         checkingLoop()
 
 
-
-def checkingLoop():
-    dots = ""
-    global top
-    global inQueue
-    inQueue = True
-    while True:
-        if inQueue == True:
-            DotMsg = '\rChecking Queue{dotNo}'.format(dotNo = dots)
-            os.system('cls' if os.name == 'nt' else 'clear')
-            #msg.set(DotMsg)
-           # top.update_idletasks()
-            screenGrab()
-            template('AcceptButton')
-            if templateMatch == True:   
-                from pymouse import PyMouse
-                m = PyMouse()
-                m.click(templatex, templatey)
-                inQueue = False
-                othersAccept()
-                top.destroy()
-            top.after(4000)
-            if dots == " . . .":
-                dots = ""
-            else:
-                dots = dots + " ."
-    print("Forever loop broken")
+def banWait():
+    banning = False
+    for x in range(1,46):
+        screenGrab()
+        template('BanTime')
+        if templateMatch == True:
+            banning = True
+            break
+        else:
+            time.sleep(4)
+    if banning == True:
+        ban()
 
 
-               
-def main():
-    win32gui.EnumWindows(callback, None)
-
-
-gameType = tk.IntVar()
-c1 = tk.Radiobutton(top, text = "Ranked" ,variable = gameType, value = 1, indicatoron=0, width = 18, bd=1)
-c2 = tk.Radiobutton(top, text = "Normal" ,variable = gameType, value = 2, indicatoron=0, width = 18, bd=1)
-c1.grid(row=0, column = 0)
-c2.grid(row=0, column = 1)
-
-l1 = tk.Label( top, text="1st Ban Pref.")
-l1.grid(row=1, column = 0)
-l2 = tk.Label( top, text="2nd Ban Pref.")
-l2.grid(row=2, column = 0)
-
-rawban1 = tk.StringVar()
-e1 = tk.Entry(top, bd =1, textvariable = rawban1, width = 22)
-rawban2 = tk.StringVar()
-e2 = tk.Entry(top, bd =1, textvariable = rawban2, width = 22)
-
-e1.grid(row=1, column=1)
-e2.grid(row=2, column=1)
-
-b1 = tk.Button(top, text = "Start", command = main, width = 37, bd=1)
-b1.grid(row=3, columnspan=2)
-
-msg = tk.StringVar()
-l3 = tk.Label( top, textvariable = msg, width = 37)
-l3.grid(row = 4, columnspan=2)
-
-
-top.mainloop()
-
-
+def ban():
+    for x in range(0,5): 
+        from pykeyboard import PyKeyboard
+        k = PyKeyboard()
+        k.tap_key(k.tab_key,n=2,interval=0.2)
+        time.sleep(0.5)
+        k.type_string(banList[x])
+        squarex = int(windowX - (windowW/4.8659))
+        squarey = int(windowY - (windowH/3.3188))
+        time.sleep(1)
+        from pymouse import PyMouse
+        m = PyMouse()
+        m.move(squarex, squarey)
+        time.sleep(1)
+        screenGrab()
+        template('BanTest')
+        m.click(squarex, squarey)
+        if templateMatch == False:
+            template('BanButton')
+            from pymouse import PyMouse
+            m = PyMouse()
+            m.click(templatex, templatey)
+            break
     
 
-    
-#if __name__ == '__main__':
-    #main()
+
+app = GUI()
+app.mainloop()
